@@ -1,0 +1,10 @@
+# create env
+python -m venv venv
+.\venv\Scripts\activate
+
+# run app
+flask --app main.py --debug run
+flask --app main.py --debug run --host=192.168.0.143 --port=5000
+
+
+C:\wamp64\www\appriegos\package\w3admin\templates\w3admin
