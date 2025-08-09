@@ -1,0 +1,418 @@
+{% extends 'w3admin/elements/layouts/admin.html' %}
+
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='w3admin/vendor/datatables/css/jquery.dataTables.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='w3admin/vendor/sweetalert2/dist/sweetalert2.min.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="outer-body">
+    <div class="inner-body">
+        <div class="content-body">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-xl-12 col-xxl-12">
+                        <div class="card">
+                            <div class="card-header flex-wrap d-flex justify-content-between">
+                                <h4 class="card-title">TODOS LOS COMPONENTES</h4>
+                                <button class="btn btn-success" onclick="showAddEComponentForm()">Nuevo</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="lista_ecomponents" class="display table" style="min-width: 845px">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">ID</th>
+                                                <th class="text-left">NODO</th>
+                                                <th class="text-left">CÓDIGO</th>
+                                                <th class="text-left">NOMBRE</th>
+                                                <th class="text-left">DESCRIPCIÓN</th>
+                                                <th class="text-center">ACCIÓN</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in ecomponents %}
+                                            <tr>
+                                                <td class="text-center">{{ row.id }}</td>
+                                                <td class="text-left">{{ row.node }}</td>
+                                                <td class="text-left">{{ row.code }}</td>
+                                                <td class="text-left">{{ row.name }}</td>
+                                                <td class="text-left">{{ row.description }}</td>
+                                                <td class="text-center">
+                                                    <div class="d-flex">
+                                                        <a href="#" class="btn btn-primary light shadow btn-xs sharp me-1 edit-btn"
+                                                            data-id="{{ row.id }}" data-node="{{ row.node }}" 
+                                                            data-code="{{ row.code }}" data-name="{{ row.name }}" 
+                                                            data-description="{{ row.description }}">
+                                                            <i class="fas fa-pencil-alt"></i>
+                                                        </a>
+                                                        <a href="#" class="btn btn-danger shadow btn-xs sharp delete-btn" data-id="{{ row.id }}">
+                                                            <i class="fa fa-trash"></i>
+                                                        </a>&nbsp;
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input status-switch" type="checkbox" role="switch"
+                                                                id="flexSwitchCheckDefault{{ row.id }}" data-id="{{ row.id }}"
+                                                                {% if row.status_id == 1 %} checked {% endif %}>
+                                                            <label class="form-check-label" for="flexSwitchCheckDefault{{ row.id }}"></label>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección de edición -->
+            <div id="edit-ecomponent" style="display:none;">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-xl-12 col-xxl-12">
+                            <div class="card">
+                                <div class="card-header flex-wrap d-flex justify-content-between">
+                                    <h4 class="card-title">Editar Componente</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="basic-form">
+                                        <form id="edit-ecomponent-form">
+                                            <input type="hidden" id="edit-id">
+                                            <div class="mb-3">
+                                                <label for="edit-node" class="form-label">Nodo</label>
+                                                <input type="text" class="form-control" id="edit-node" maxlength="4">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-code" class="form-label">Código</label>
+                                                <input type="text" class="form-control" id="edit-code">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-name" class="form-label">Nombre</label>
+                                                <input type="text" class="form-control" id="edit-name">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-description" class="form-label">Descripción</label>
+                                                <input type="text" class="form-control" id="edit-description">
+                                            </div>
+                                            <button type="button" class="btn btn-primary" onclick="saveEComponent()">Guardar</button>
+                                            <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancelar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de agregar nuevo -->
+            <div id="add-ecomponent" style="display:none;">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-xl-12 col-xxl-12">
+                            <div class="card">
+                                <div class="card-header flex-wrap d-flex justify-content-between">
+                                    <h4 class="card-title">Nuevo Componente</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="basic-form">
+                                        <form id="add-ecomponent-form">
+                                            <div class="mb-3">
+                                                <label for="add-node" class="form-label">Nodo</label>
+                                                <input type="text" class="form-control" id="add-node" maxlength="4">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="add-code" class="form-label">Código</label>
+                                                <input type="text" class="form-control" id="add-code">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="add-name" class="form-label">Nombre</label>
+                                                <input type="text" class="form-control" id="add-name">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="add-description" class="form-label">Descripción</label>
+                                                <input type="text" class="form-control" id="add-description">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="add-ecpu-id" class="form-label">Seleccionar ECPU</label>
+                                                <select class="form-control" id="add-ecpu-id">
+                                                    {% for ecpu in ecpu_list %}
+                                                    <option value="{{ ecpu.id }}">{{ ecpu.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="add-frecuency-id" class="form-label">Seleccionar Frecuencia</label>
+                                                <select class="form-control" id="add-frecuency-id">
+                                                    {% for frecuency in frecuency_list %}
+                                                    <option value="{{ frecuency.id }}">{{ frecuency.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <button type="button" class="btn btn-success" onclick="addEComponent()">Guardar</button>
+                                            <button type="button" class="btn btn-secondary" onclick="cancelAdd()">Cancelar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block additional_js %}
+<script src="{{ url_for('static', filename='w3admin/vendor/chart.js/Chart.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/apexchart/apexchart.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/jquery-validation/jquery.validate.min.js')}}"></script>
+<script src="{{ url_for('static', filename='w3admin/js/plugins-init/jquery.validate-init.js')}}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/datatables/js/datatables-config.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/sweetalert2/dist/sweetalert2@11.js') }}"></script>
+<script>
+    $(document).ready(function() {
+        $('#lista_ecomponents').DataTable();
+
+        // Edit button click handler
+        $('.edit-btn').on('click', function() {
+            var id = $(this).data('id');
+            var node = $(this).data('node');
+            var code = $(this).data('code');
+            var name = $(this).data('name');
+            var description = $(this).data('description');
+
+            $('#edit-id').val(id);
+            $('#edit-node').val(node);
+            $('#edit-code').val(code);
+            $('#edit-name').val(name);
+            $('#edit-description').val(description);
+
+            $('.content-body > .container-fluid').hide();
+            $('#edit-ecomponent').show();
+        });
+
+        // Delete button click handler
+        $('.delete-btn').on('click', function() {
+            var id = $(this).data('id');
+
+            Swal.fire({
+                title: "¿Seguro que deseas eliminar el componente con ID " + id + "?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sí, eliminar",
+                cancelButtonText: "Cancelar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/admin/ecomponents/delete/' + id,
+                        method: 'DELETE',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: "Eliminado",
+                                    text: "EComponent eliminado correctamente.",
+                                    icon: "success"
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: "Error",
+                                    text: response.error,
+                                    icon: "error"
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        // Handle status switch toggle
+        $('.status-switch').on('change', function() {
+            var id = $(this).data('id');
+            var status_id = $(this).is(':checked') ? 1 : 0;
+
+            $.ajax({
+                url: '/admin/ecomponents/update_status/' + id,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ status_id: status_id }),
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: "Estado actualizado",
+                            text: "El componente ha sido " + (status_id ? "activado" : "desactivado") + " correctamente",
+                            icon: "success"
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Error",
+                            text: response.error,
+                            icon: "error"
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error en la solicitud:", error);
+                }
+            });
+        });
+
+        // Save edited ecomponent
+        function saveEComponent() {
+            var id = $('#edit-id').val();
+            var node = $('#edit-node').val();
+            var code = $('#edit-code').val();
+            var name = $('#edit-name').val();
+            var description = $('#edit-description').val();
+
+            if (node === '' || code === '' || name === '' || description === '') {
+                Swal.fire({
+                    title: "Error",
+                    text: "Todos los campos son obligatorios.",
+                    icon: "error"
+                });
+                return;
+            }
+
+            $.ajax({
+                url: '/admin/ecomponents/update/' + id,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ node: node, code: code, name: name, description: description }),
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: "Actualizado",
+                            text: "EComponent actualizado correctamente.",
+                            icon: "success"
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Error",
+                            text: response.error,
+                            icon: "error"
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error en la solicitud:", error);
+                    Swal.fire({
+                        title: "Error de conexión",
+                        text: "No se pudo completar la solicitud.",
+                        icon: "error"
+                    });
+                }
+            });
+        }
+
+        function cancelEdit() {
+            $('#edit-ecomponent').hide();
+            $('#add-ecomponent').hide();  // ✅ Ocultar cualquier residuo del formulario nuevo
+            $('.content-body > .container-fluid').show();
+        }
+
+        function showAddEComponentForm() {
+            $('#edit-ecomponent').hide();  // ✅ Ocultar edición si estaba abierto
+            $('.content-body > .container-fluid').hide();
+            $('#add-ecomponent').show();
+        }
+
+        function addEComponent() {
+            var node = $('#add-node').val();
+            var code = $('#add-code').val();
+            var name = $('#add-name').val();
+            var description = $('#add-description').val();
+            var ecpu_id = $('#add-ecpu-id').val();
+            var frecuency_id = $('#add-frecuency-id').val();
+
+            if (node === '' || code === '' || name === '' || description === '' || ecpu_id === '' || frecuency_id === '') {
+                Swal.fire({
+                    title: "Error",
+                    text: "Todos los campos son obligatorios.",
+                    icon: "error"
+                });
+                return;
+            }
+
+            $.ajax({
+                url: '/admin/ecomponents/add',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ node: node, code: code, name: name, description: description, ecpu_id: ecpu_id, frecuency_id: frecuency_id }),
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: "Guardado",
+                            text: "EComponent agregado correctamente.",
+                            icon: "success"
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Error",
+                            text: response.error,
+                            icon: "error"
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error en la solicitud:", error);
+                    Swal.fire({
+                        title: "Error de conexión",
+                        text: "No se pudo completar la solicitud.",
+                        icon: "error"
+                    });
+                }
+            });
+        }
+
+        function cancelAdd() {
+            $('#add-ecomponent').hide();  // ✅
+            $('.content-body > .container-fluid').show();
+        }
+
+        window.saveEComponent = saveEComponent;
+        window.cancelEdit = cancelEdit;
+        window.showAddEComponentForm = showAddEComponentForm;
+        window.addEComponent = addEComponent;
+        window.cancelAdd = cancelAdd;
+    });
+</script>
+<script>
+    // Obtener todos los elementos con la clase 'fecha'
+    var fechas = document.querySelectorAll('.fecha');
+    
+    fechas.forEach(function(fechaElemento) {
+        // Obtener el texto de la fecha
+        var fechaTexto = fechaElemento.innerText;
+
+        // Convertir la fecha de texto a un objeto Date
+        var fechaObjeto = new Date(fechaTexto);
+
+        // Formatear la fecha como dd-mm-yyyy
+        var dia = String(fechaObjeto.getDate()).padStart(2, '0');
+        var mes = String(fechaObjeto.getMonth() + 1).padStart(2, '0');
+        var anio = fechaObjeto.getFullYear();
+
+        var fechaFormateada = dia + '-' + mes + '-' + anio;
+
+        // Actualizar el texto del elemento con la fecha formateada
+        fechaElemento.innerText = fechaFormateada;
+    });
+</script>
+{% endblock %}

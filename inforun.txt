@@ -8,3 +8,44 @@ flask --app main.py --debug run --host=192.168.0.143 --port=5000
 
 
 C:\wamp64\www\appriegos\package\w3admin\templates\w3admin
+
+psql -U postgres -d db_componentsync -f C:\backup\projects\personal\ComponentSync\db_data_ebox_20250502.dump
+
+
+
+componentsync
+│── w3admin
+│   ├── static/
+│   ├── templates/
+│   ├── administration/   # Módulo de administración
+│   │   ├── areas/        # Submódulo para la gestión de áreas
+│   │   │   ├── functions.py  # Archivo para funciones relacionadas con áreas
+│   │   │   ├── routes.py     # Archivo para las rutas de áreas
+│   │   │   ├── models.py     # Opcional: si quisieras modelos específicos aquí
+│	│   ├── schedules/
+│	│   │   ├── routes.py
+│	│   │   ├── models.py
+│	│   │   ├── functions.py
+│	│   │   └── templates/
+│	│   │       └── w3admin/administration/listschedules.html
+│	│   ├── dashboard/
+│	│   │   ├── routes.py
+│	│   │   ├── models.py
+│	│   │   ├── functions.py
+│	│   │   └── templates/
+│	│   │       └── w3admin/administradashboardtion/index.html
+│   │   ├── gestion/      # Otro submódulo
+│   │   ├── reportes/     # Otro submódulo
+│   ├── auth.py
+│   ├── config.py
+│   ├── models.py
+│   ├── routes.py
+│   ├── __init__.py
+│── main.py
+│── requirements.txt
+│── run_flask.bat
+
+sc
+area
+ecpu
+ecom

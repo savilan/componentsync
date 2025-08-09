@@ -1,0 +1,384 @@
+{% extends 'w3admin/elements/layouts/admin.html' %}
+
+<!-- Additional Css -->
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='w3admin/vendor/datatables/css/jquery.dataTables.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='w3admin/vendor/sweetalert2/dist/sweetalert2.min.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="outer-body">
+    <div class="inner-body">
+        <div class="content-body">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-xl-12 col-xxl-12">
+                        <div class="card">
+                            <div class="card-header flex-wrap d-flex justify-content-between">
+                                <h4 class="card-title">TODOS LOS ECPUs</h4>
+                                <button class="btn btn-success" onclick="showAddECPUForm()">Nuevo</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="lista_ecpus" class="display table" style="min-width: 845px">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">ID</th>
+                                                <th class="text-left">CÓDIGO</th>
+                                                <th class="text-left">NODE</th>
+                                                <th class="text-left">NOMBRE</th>
+                                                <th class="text-left">DESCRIPCIÓN</th>
+                                                <th class="text-left">ACCIÓN</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for ecpu in ecpu_list %}
+                                            <tr>
+                                                <td class="text-center">{{ ecpu.id }}</td>
+                                                <td class="text-left">{{ ecpu.code }}</td>
+                                                <td class="text-left">{{ ecpu.node }}</td>
+                                                <td class="text-left">{{ ecpu.name }}</td>         
+                                                <td class="text-left">{{ ecpu.descrip }}</td>
+                                                <td class="text-left">
+                                                    <div class="d-flex">
+                                                        <a href="#" class="btn btn-primary light shadow btn-xs sharp me-1 edit-btn" 
+                                                            data-id="{{ ecpu.id }}"
+                                                            data-code="{{ ecpu.code }}"
+                                                            data-node="{{ ecpu.node }}"
+                                                            data-name="{{ ecpu.name }}"
+                                                            data-descrip="{{ ecpu.descrip }}">
+                                                            <i class="fas fa-pencil-alt"></i>
+                                                        </a>
+                                                        <a href="#" class="btn btn-danger shadow btn-xs sharp delete-btn" data-id="{{ ecpu.id }}"><i class="fa fa-trash"></i></a>&nbsp
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input status-switch" type="checkbox" role="switch" id="flexSwitchCheckDefault{{ ecpu.id }}" data-id="{{ ecpu.id }}" {% if ecpu.status_id == 1 %} checked {% endif %}>
+                                                            <label class="form-check-label" for="flexSwitchCheckDefault{{ ecpu.id }}"></label>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="edit-ecpu" style="display:none;">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-xl-12 col-xxl-12">
+                            <div class="card">
+                                <div class="card-header flex-wrap d-flex justify-content-between">
+                                    <h4 class="card-title">Editar ECPU</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="basic-form">
+                                        <form id="edit-ecpu-form">
+                                            <input type="hidden" id="edit-id">
+                                            <div class="mb-3">
+                                                <label for="edit-code" class="form-label">Código</label>
+                                                <input type="text" class="form-control" id="edit-code">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-node" class="form-label">Node</label>
+                                                <input type="text" class="form-control" id="edit-node" maxlength="4">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-name" class="form-label">Nombre</label>
+                                                <input type="text" class="form-control" id="edit-name">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-descrip" class="form-label">Descripción</label>
+                                                <input type="text" class="form-control" id="edit-descrip">
+                                            </div>
+                                            <button type="button" class="btn btn-primary" onclick="saveECPU()">Guardar</button>
+                                            <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancelar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="add-ecpu" style="display:none;">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-xl-12 col-xxl-12">
+                            <div class="card">
+                                <div class="card-header flex-wrap d-flex justify-content-between">
+                                    <h4 class="card-title">Nuevo ECPU</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-validation basic-form">
+                                        <form id="add-ecpu-form" class="needs-validation" novalidate>
+                                            <div class="mb-3">
+                                                <label for="add-code" class="form-label">Código <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="add-code" placeholder="Código ECPU" required>
+                                                <div class="invalid-feedback">Ingrese el código</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="add-node" class="form-label">Node <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="add-node" placeholder="Node ECPU" maxlength="4" required>
+                                                <div class="invalid-feedback">Ingrese el node</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="add-name" class="form-label">Nombre <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="add-name" placeholder="Nombre del ECPU" required>
+                                                <div class="invalid-feedback">Ingrese el nombre</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="add-descrip" class="form-label">Descripción <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="add-descrip" placeholder="Descripción del ECPU" required>
+                                                <div class="invalid-feedback">Ingrese la descripción</div>
+                                            </div>
+                                            <button type="submit" class="btn btn-success" onclick="addECPU()">Guardar</button>
+                                            <button type="button" class="btn btn-secondary" onclick="cancelAdd()">Cancelar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>    
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='w3admin/vendor/chart.js/Chart.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/apexchart/apexchart.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/jquery-validation/jquery.validate.min.js')}}"></script>
+<script src="{{ url_for('static', filename='w3admin/js/plugins-init/jquery.validate-init.js')}}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/datatables/js/datatables-config.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/sweetalert2/dist/sweetalert2@11.js') }}"></script>
+<script>
+    $(document).ready(function() {
+        $('#lista_ecpus').DataTable();
+
+        $('.edit-btn').on('click', function() {
+            var id = $(this).data('id');
+            var code = $(this).data('code');
+            var node = $(this).data('node');
+            var name = $(this).data('name');
+            var descrip = $(this).data('descrip');
+
+            $('#edit-id').val(id);
+            $('#edit-code').val(code);
+            $('#edit-node').val(node);
+            $('#edit-name').val(name);
+            $('#edit-descrip').val(descrip);
+
+            $('.content-body > .container-fluid').hide();
+            $('#edit-ecpu').show();
+        });
+
+        // Delete button click handler
+        $('.delete-btn').on('click', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: "¿Eliminar ECPU?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Eliminar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/admin/ecpus/delete/' + id,
+                        method: 'DELETE',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({ title: "Eliminado", text: "ECPU eliminado", icon: "success" })
+                                    .then(() => location.reload());
+                            } else {
+                                Swal.fire({ title: "Error", text: response.error, icon: "error" });
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        // Handle status switch toggle
+        $('.status-switch').on('change', function() {
+            var id = $(this).data('id');
+            var status_id = $(this).is(':checked') ? 1 : 0;
+
+            $.ajax({
+                url: '/admin/ecpus/update_status/' + id,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ status_id: status_id }),
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: "Estado actualizado",
+                            text: "ECPU ha sido " + (status_id ? "activado" : "desactivado"),
+                            icon: "success"
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({ title: "Error", text: response.error, icon: "error" });
+                    }
+                }
+            });
+        });
+
+        function saveECPU() {
+            var id = $('#edit-id').val();
+            var code = $('#edit-code').val();
+            var node = $('#edit-node').val();
+            var name = $('#edit-name').val();
+            var descrip = $('#edit-descrip').val();
+
+            if (code === '' || node === '' || name === '' || descrip === '') {
+                Swal.fire({
+                    title: "Campos vacíos",
+                    text: "Todos los campos son obligatorios.",
+                    icon: "warning"
+                });
+                return;
+            }
+
+            $.ajax({
+                url: '/admin/ecpus/update/' + id,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    code: code,
+                    node: node,
+                    name: name,
+                    descrip: descrip
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: "Actualizado",
+                            text: "ECPU actualizado correctamente.",
+                            icon: "success"
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({ title: "Error", text: response.error, icon: "error" });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error en la solicitud:", error);
+                    Swal.fire({
+                        title: "Error de conexión",
+                        text: "No se pudo completar la solicitud.",
+                        icon: "error"
+                    });
+                }
+            });
+        }
+        // Cancel edit and show the table
+        function cancelEdit() {
+            $('#edit-area').hide();
+            $('.content-body > .container-fluid').show();
+        }
+
+        // Show add area form and hide table
+        function showAddECPUForm() {
+            $('.content-body > .container-fluid').hide();
+            $('#add-ecpu').show();
+        }
+
+        function addECPU() {
+            var code = $('#add-code').val();
+            var node = $('#add-node').val();
+            var name = $('#add-name').val();
+            var descrip = $('#add-descrip').val();
+
+            if (code === '' || node === '' || name === '' || descrip === '') {
+                Swal.fire({
+                    title: "Campos incompletos",
+                    text: "Por favor, complete todos los campos obligatorios.",
+                    icon: "warning"
+                });
+                return;
+            }
+
+            $.ajax({
+                url: '/admin/ecpus/add',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    code: code,
+                    node: node,
+                    name: name,
+                    descrip: descrip,
+                    status_id: 1
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: "Guardado",
+                            text: "ECPU agregado correctamente.",
+                            icon: "success"
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Error",
+                            text: response.error,
+                            icon: "error"
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error en la solicitud:", error);
+                    Swal.fire({
+                        title: "Error de conexión",
+                        text: "No se pudo completar la solicitud.",
+                        icon: "error"
+                    });
+                }
+            });
+        }
+
+        // Cancel add and show the table
+        function cancelAdd() {
+            $('#add-area').hide();
+            $('.content-body > .container-fluid').show();
+        }
+
+        window.saveECPU = saveECPU;
+        window.cancelEdit = cancelEdit;
+        window.showAddECPUForm = showAddECPUForm;
+        window.addECPU = addECPU;
+        window.cancelAdd = cancelAdd;
+    });
+</script>
+<script>
+    // Obtener todos los elementos con la clase 'fecha'
+    var fechas = document.querySelectorAll('.fecha');
+    
+    fechas.forEach(function(fechaElemento) {
+        // Obtener el texto de la fecha
+        var fechaTexto = fechaElemento.innerText;
+
+        // Convertir la fecha de texto a un objeto Date
+        var fechaObjeto = new Date(fechaTexto);
+
+        // Formatear la fecha como dd-mm-yyyy
+        var dia = String(fechaObjeto.getDate()).padStart(2, '0');
+        var mes = String(fechaObjeto.getMonth() + 1).padStart(2, '0'); // Los meses en JavaScript van de 0 a 11
+        var anio = fechaObjeto.getFullYear();
+
+        var fechaFormateada = dia + '-' + mes + '-' + anio;
+
+        // Actualizar el texto del elemento con la fecha formateada
+        fechaElemento.innerText = fechaFormateada;
+    });
+</script>
+{% endblock %}

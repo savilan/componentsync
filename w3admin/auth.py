@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app
+from flask_login import login_user
+from flask_login import logout_user
 from functools import wraps
 from itsdangerous import URLSafeTimedSerializer
 from flask_mail import Message
@@ -92,7 +94,7 @@ def login():
         password = request.form['dz-password']
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
-            session['user_id'] = user.id
+            login_user(user, remember=True)  # 🔥 Esto gestiona la sesión con Flask-Login
             flash('Inicio de sesión exitoso', 'success')
             return redirect(url_for('main.index'))
         else:
@@ -101,9 +103,6 @@ def login():
 
 @auth.route('/logout')
 def logout():
-    session.pop('user_id', None)
+    logout_user()
     flash('Has cerrado sesión correctamente', 'success')
     return redirect(url_for('auth.login'))
-
-
-

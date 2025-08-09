@@ -1,0 +1,314 @@
+{% extends 'w3admin/elements/layouts/admin.html' %}
+
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='w3admin/vendor/datatables/css/jquery.dataTables.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='w3admin/vendor/sweetalert2/dist/sweetalert2.min.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="outer-body">
+    <div class="inner-body">
+        <div class="content-body">
+            <div class="container-fluid">
+                <!-- Tabla principal -->
+                <div id="list-schedules">
+                    <div class="row">
+                        <div class="col-xl-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between">
+                                    <h4 class="card-title">Horarios</h4>
+                                    <button type="button" class="btn btn-success" onclick="showAddScheduleForm()">Nuevo</button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table id="lista_schedules" class="table display">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Título</th>
+                                                    <th>Inicio</th>
+                                                    <th>Fin</th>
+                                                    <th>Duración</th>
+                                                    <th>Tipo</th>
+                                                    <th>Estatus</th>
+                                                    <th>Notas</th>
+                                                    <th>Veces / Min.</th>
+                                                    <th>Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for row in schedules %}
+                                                <tr>
+                                                    <td>{{ row.id }}</td>
+                                                    <td>{{ row.title }}</td>
+                                                    <td>{{ row.start_day }} {{ row.start_datetime.strftime("%H:%M") }}</td>
+                                                    <td>{{ row.end_day }} {{ row.end_datetime.strftime("%H:%M") }}</td>
+                                                    <td>
+                                                        {% set start = datetime.combine(row.start_day, row.start_datetime) %}
+                                                        {% set end = datetime.combine(row.end_day, row.end_datetime) %}
+                                                        {{ (end - start).seconds // 60 }} min
+                                                    </td>
+                                                    <td>{{ row.execution_type or 'programada' }}</td>
+                                                    <td>{{ row.execution_status or 'pendiente' }}</td>
+                                                    <td>{{ row.notes or '' }}</td>
+                                                    <td>{{ row.count }} / {{ (end - start).seconds // 60 }}</td>
+                                                    <td>
+                                                        <button class="btn btn-primary edit-btn" data-id="{{ row.id }}" ...>✏️</button>
+                                                        <button class="btn btn-danger delete-btn" data-id="{{ row.id }}">🗑️</button>
+                                                        <button class="btn btn-warning clone-btn" data-id="{{ row.id }}">📋</button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="clone-modal" style="display:none;">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between">
+                            <h4 class="card-title">Clonar Horario</h4>
+                        </div>
+                        <div class="card-body">
+                            <input type="hidden" id="clone-source-id">
+                            <div class="mb-3">
+                                <label>Cantidad de clones</label>
+                                <input type="number" class="form-control" id="clone-count" min="1" value="1">
+                            </div>
+                            <div class="mb-3">
+                                <label>Duración por riego (minutos)</label>
+                                <input type="number" class="form-control" id="clone-duration" min="1" value="15">
+                            </div>
+                            <button type="button" class="btn btn-warning" onclick="executeClone()">Clonar</button>
+                            <button type="button" class="btn btn-secondary" onclick="cancelClone()">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario de nuevo horario -->
+                <div id="add-schedule" style="display:none;">
+                    <div class="card">
+                        <div class="card-header"><h4 class="card-title">Nuevo Horario</h4></div>
+                        <div class="card-body">
+                            <form>
+                                <div class="mb-3"><input type="text" class="form-control" id="add-title" placeholder="Título"></div>
+                                <div class="row mb-3">
+                                    <div class="col"><input type="date" class="form-control" id="add-start-day"></div>
+                                    <div class="col"><input type="time" class="form-control" id="add-start-time"></div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col"><input type="date" class="form-control" id="add-end-day"></div>
+                                    <div class="col"><input type="time" class="form-control" id="add-end-time"></div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col"><input type="number" class="form-control" id="add-frecuency-id" placeholder="Frecuencia"></div>
+                                    <div class="col"><input type="number" class="form-control" id="add-condition-id" placeholder="Condición"></div>
+                                    <div class="col"><input type="number" class="form-control" id="add-count" placeholder="Repeticiones"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-control" id="add-status-id">
+                                        <option value="1">Activo</option>
+                                        <option value="0">Inactivo</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-success" onclick="addSchedule()">Guardar</button>
+                                <button type="button" class="btn btn-secondary" onclick="cancelAdd()">Cancelar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario de edición -->
+                <div id="edit-schedule" style="display:none;">
+                    <div class="card">
+                        <div class="card-header"><h4 class="card-title">Editar Horario</h4></div>
+                        <div class="card-body">
+                            <form>
+                                <input type="hidden" id="edit-id">
+                                <div class="mb-3"><input type="text" class="form-control" id="edit-title" placeholder="Título"></div>
+                                <div class="row mb-3">
+                                    <div class="col"><input type="date" class="form-control" id="edit-start-day"></div>
+                                    <div class="col"><input type="time" class="form-control" id="edit-start-time"></div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col"><input type="date" class="form-control" id="edit-end-day"></div>
+                                    <div class="col"><input type="time" class="form-control" id="edit-end-time"></div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col"><input type="number" class="form-control" id="edit-frecuency-id" placeholder="Frecuencia"></div>
+                                    <div class="col"><input type="number" class="form-control" id="edit-condition-id" placeholder="Condición"></div>
+                                    <div class="col"><input type="number" class="form-control" id="edit-count" placeholder="Repeticiones"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-control" id="edit-status-id">
+                                        <option value="1">Activo</option>
+                                        <option value="0">Inactivo</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Guardar</button>
+                                <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancelar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='w3admin/vendor/chart.js/Chart.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/apexchart/apexchart.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/jquery-validation/jquery.validate.min.js')}}"></script>
+<script src="{{ url_for('static', filename='w3admin/js/plugins-init/jquery.validate-init.js')}}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/datatables/js/datatables-config.js') }}"></script>
+<script src="{{ url_for('static', filename='w3admin/vendor/sweetalert2/dist/sweetalert2@11.js') }}"></script>
+<script>
+$(document).ready(function () {
+    $('#lista_schedules').DataTable();
+
+    $('.edit-btn').on('click', function () {
+        const btn = $(this);
+        $('#edit-id').val(btn.data('id'));
+        $('#edit-title').val(btn.data('title'));
+        $('#edit-start-day').val(btn.data('start_day'));
+        $('#edit-start-time').val(btn.data('start_time'));
+        $('#edit-end-day').val(btn.data('end_day'));
+        $('#edit-end-time').val(btn.data('end_time'));
+        $('#edit-frecuency-id').val(btn.data('frecuency_id'));
+        $('#edit-condition-id').val(btn.data('condition_id'));
+        $('#edit-count').val(btn.data('count'));
+        $('#edit-status-id').val(btn.data('status_id'));
+        $('#list-schedules').hide();
+        $('#add-schedule').hide();
+        $('#edit-schedule').show();
+    });
+
+    $('.delete-btn').on('click', function () {
+        const id = $(this).data('id');
+        Swal.fire({
+            title: '¿Eliminar horario?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/gestion/schedules/delete/${id}`,
+                    type: 'DELETE',
+                    success: function (res) {
+                    if (res.success) {
+                            location.reload();
+                        } else {
+                            alert(res.error);
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    window.showAddScheduleForm = function () {
+        $('#list-schedules').hide();
+        $('#edit-schedule').hide();
+        $('#add-schedule').show();
+    }
+
+    window.cancelAdd = function () {
+        $('#add-schedule').hide();
+        $('#list-schedules').show();
+    }
+
+    window.cancelEdit = function () {
+        $('#edit-schedule').hide();
+        $('#list-schedules').show();
+    }
+
+    window.addSchedule = function () {
+        const payload = {
+            title: $('#add-title').val(),
+            start_day: $('#add-start-day').val(),
+            start_datetime: $('#add-start-time').val(),
+            end_day: $('#add-end-day').val(),
+            end_datetime: $('#add-end-time').val(),
+            frecuency_id: $('#add-frecuency-id').val(),
+            condition_id: $('#add-condition-id').val(),
+            count: $('#add-count').val(),
+            status_id: $('#add-status-id').val()
+        };
+
+        $.post({
+            url: '/gestion/schedules/add',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function (res) {
+                if (res.success) location.reload();
+                else alert(res.error);
+            }
+        });
+    }
+
+    window.saveSchedule = function () {
+        const id = $('#edit-id').val();
+        const payload = {
+            title: $('#edit-title').val(),
+            start_day: $('#edit-start-day').val(),
+            start_datetime: $('#edit-start-time').val(),
+            end_day: $('#edit-end-day').val(),
+            end_datetime: $('#edit-end-time').val(),
+            frecuency_id: $('#edit-frecuency-id').val(),
+            condition_id: $('#edit-condition-id').val(),
+            count: $('#edit-count').val(),
+            status_id: $('#edit-status-id').val()
+        };
+
+        $.post({
+            url: `/gestion/schedules/update/${id}`,
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function (res) {
+                if (res.success) location.reload();
+                else alert(res.error);
+            }
+        });
+    }
+});
+
+$('.clone-btn').on('click', function () {
+    const id = $(this).data('id');
+    $('#clone-source-id').val(id);
+    $('#list-schedules').hide();
+    $('#edit-schedule').hide();
+    $('#add-schedule').hide();
+    $('#clone-modal').show();
+});
+
+window.cancelClone = function () {
+    $('#clone-modal').hide();
+    $('#list-schedules').show();
+};
+
+window.executeClone = function () {
+    const id = $('#clone-source-id').val();
+    const cloneCount = parseInt($('#clone-count').val());
+    const duration = parseInt($('#clone-duration').val());
+
+    $.post({
+        url: `/gestion/schedules/clone/${id}`,
+        contentType: 'application/json',
+        data: JSON.stringify({ count: cloneCount, duration: duration }),
+        success: function (res) {
+            if (res.success) location.reload();
+            else Swal.fire('Error', res.error, 'error');
+        }
+    });
+};
+
+</script>
+{% endblock %}

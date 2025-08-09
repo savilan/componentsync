@@ -1,11 +1,25 @@
 from flask import Flask, render_template, Blueprint, request, g, jsonify, redirect, url_for, flash, session, current_app as app
+from w3admin.administration.areas.routes import areas_bp
+from w3admin.administration.ecpus.routes import ecpus_bp
+from w3admin.administration.ecomponents.routes import ecomponents_bp
+from w3admin.gestion.schedules.routes import schedules_bp
+from w3admin.dashboard.routes import dashboard_bp
 from flask_login import current_user
 from functools import wraps
 from datetime import datetime
-from .models import Area, User, VisitLog
+from w3admin.administration.areas.models import Area
+from .models import User, VisitLog
 from . import db
+import requests
+
 
 main = Blueprint('main', __name__)
+
+main.register_blueprint(areas_bp, url_prefix='/admin/areas')
+main.register_blueprint(ecpus_bp, url_prefix='/admin/ecpus')
+main.register_blueprint(ecomponents_bp, url_prefix='/admin/ecomponents')
+main.register_blueprint(schedules_bp, url_prefix='/gestion/schedules')
+main.register_blueprint(dashboard_bp, url_prefix='/dashboard')
 
 def login_required(f):
     @wraps(f)
@@ -16,13 +30,12 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 @main.route("/")
 @main.route("/index")
 def index():
-    context = {
-        "page_title": "Dashboard Light"
-    }
-    return render_template("w3admin/index.html", **context)
+    return redirect("/dashboard/index")
+
 
 @main.route("/index-2")
 def index_2():
@@ -31,69 +44,59 @@ def index_2():
     }
     return render_template("w3admin/index-2.html", **context)
 
+def extract_ip():
+    # Si X-Forwarded-For está presente y IP no es privada, úsala
+    x_forwarded = request.headers.get("X-Forwarded-For", "").split(',')[0].strip()
+
+    def is_public(ip):
+        return not (
+            ip.startswith("127.") or
+            ip.startswith("192.168.") or
+            ip.startswith("10.") or
+            ip.startswith("::1") or
+            ip == "localhost"
+        )
+
+    if x_forwarded and is_public(x_forwarded):
+        return x_forwarded
+
+    return request.remote_addr
+
+
+def get_country(ip_address):
+    # Ignorar IPs privadas
+    if ip_address.startswith("127.") or ip_address.startswith("192.168.") or ip_address.startswith("10.") or ip_address == "localhost":
+        return "Local"
+
+    try:
+        res = requests.get(f"https://ipapi.co/{ip_address}/country_name/", timeout=2)
+        if res.ok:
+            texto = res.text.strip()
+            if texto and texto.lower() != "undefined":
+                return texto
+    except Exception:
+        pass
+    return "Desconocido"
+
+
 
 DEFAULT_USER_ID = 0
 
 @main.before_request
 def log_visit():
-    ip_address = request.remote_addr
+    ip_address = extract_ip()
     route = request.path
     user_id = session.get('user_id', DEFAULT_USER_ID)
+    country = get_country(ip_address)
 
-    visit_log = VisitLog(ip_address=ip_address, user_id=user_id, route=route)
+    visit_log = VisitLog(
+        ip_address=ip_address,
+        user_id=user_id,
+        route=route,
+        country=country
+    )
     db.session.add(visit_log)
     db.session.commit()
-
-
-
-@main.route("/areas")
-@login_required
-def areas():
-    context = {
-        "page_title": "Areas"
-    }
-    areas = Area.query.all()
-    return render_template("w3admin/administration/listareas.html", **context, areas=areas)
-
-@main.route('/update_area/<int:id>', methods=['POST'])
-def update_area(id):
-    data = request.json
-    area = Area.query.get(id)
-    if area:
-        area.area = data['area']
-        area.description = data['description']
-        db.session.commit()
-        return jsonify(success=True)
-    return jsonify(success=False, error="Área no encontrada")
-
-@main.route('/delete_area/<int:id>', methods=['DELETE'])
-def delete_area(id):
-    area = Area.query.get(id)
-    if area:
-        db.session.delete(area)
-        db.session.commit()
-        return jsonify(success=True)
-    return jsonify(success=False, error="Área no encontrada")
-
-@main.route('/update_area_status/<int:id>', methods=['POST'])
-def update_area_status(id):
-    data = request.json
-    area = Area.query.get(id)
-    if area:
-        area.status_id = data['status_id']
-        db.session.commit()
-        return jsonify(success=True)
-    return jsonify(success=False, error="Área no encontrada")
-
-
-@main.route('/add_area', methods=['POST'])
-def add_area():
-    print(request.json)
-    data = request.json
-    new_area = Area(area=data['area'], description=data['description'],status_id=1,plant_id=1)
-    db.session.add(new_area)
-    db.session.commit()
-    return jsonify(success=True)
 
 
 @main.route("/index-3")
