@@ -1,0 +1,56 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h4 class="card-title">Nuevo Horario</h4>
+    </div>
+    <div class="card-body">
+        <form id="add-schedule-form">
+            <div class="mb-3">
+                <label class="form-label">Título</label>
+                <input type="text" class="form-control" id="add-title" required>
+            </div>
+            <div class="mb-3 row">
+                <div class="col">
+                    <label class="form-label">Día Inicio</label>
+                    <input type="date" class="form-control" id="add-start-day" required>
+                </div>
+                <div class="col">
+                    <label class="form-label">Hora Inicio</label>
+                    <input type="time" class="form-control" id="add-start-time" required>
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <div class="col">
+                    <label class="form-label">Día Fin</label>
+                    <input type="date" class="form-control" id="add-end-day" required>
+                </div>
+                <div class="col">
+                    <label class="form-label">Hora Fin</label>
+                    <input type="time" class="form-control" id="add-end-time" required>
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <div class="col">
+                    <label class="form-label">Frecuencia</label>
+                    <input type="number" class="form-control" id="add-frecuency-id" required>
+                </div>
+                <div class="col">
+                    <label class="form-label">Condición</label>
+                    <input type="number" class="form-control" id="add-condition-id" required>
+                </div>
+                <div class="col">
+                    <label class="form-label">Repeticiones</label>
+                    <input type="number" class="form-control" id="add-count" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Estatus</label>
+                <select class="form-control" id="add-status-id">
+                    <option value="1">Activo</option>
+                    <option value="0">Inactivo</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-success" onclick="addSchedule()">Guardar</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelAdd()">Cancelar</button>
+        </form>
+    </div>
+</div>
